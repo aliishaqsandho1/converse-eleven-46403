@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { salesApi, customersApi } from "@/services/api";
-import { OrderDetailsModal } from "@/components/orders/OrderDetailsModal";
 import { PDFExportModal, ExportOptions } from "@/components/orders/PDFExportModal";
 import { OrdersHeader } from "@/components/orders/OrdersHeader";
 import { OrdersSummaryCards } from "@/components/orders/OrdersSummaryCards";
@@ -56,8 +55,6 @@ const Orders = () => {
     avgOrderValue: 0
   });
   
-  const [selectedOrder, setSelectedOrder] = useState<Sale | null>(null);
-  const [isOrderDetailsOpen, setIsOrderDetailsOpen] = useState(false);
   const [isPDFExportModalOpen, setIsPDFExportModalOpen] = useState(false);
 
   // Items per page for server-side pagination
@@ -246,11 +243,6 @@ const Orders = () => {
     }
   };
 
-  const handleViewOrder = (order: Sale) => {
-    setSelectedOrder(order);
-    setIsOrderDetailsOpen(true);
-  };
-
   const handleOrderPDF = async (order: Sale) => {
     await generateOrderPDF(order);
   };
@@ -411,20 +403,12 @@ const Orders = () => {
             orders={orders}
             currentPage={currentPage}
             totalPages={totalPages}
-            onViewOrder={handleViewOrder}
             onOrderPDF={handleOrderPDF}
             onPageChange={handlePageChange}
+            onOrderUpdated={fetchOrders}
           />
         </CardContent>
       </Card>
-
-      {/* Order Details Modal */}
-      <OrderDetailsModal
-        open={isOrderDetailsOpen}
-        onOpenChange={setIsOrderDetailsOpen}
-        order={selectedOrder}
-        onOrderUpdated={fetchOrders}
-      />
 
       {/* PDF Export Modal */}
       <PDFExportModal
