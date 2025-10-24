@@ -31,6 +31,7 @@ import {
   PaginationPrevious 
 } from "@/components/ui/pagination";
 import { SinglePurchaseOrderForm } from "@/components/purchase-orders/SinglePurchaseOrderForm";
+import { ExpandedPurchaseOrderRow } from "@/components/purchase-orders/ExpandedPurchaseOrderRow";
 import { apiConfig } from "@/utils/apiConfig";
 
 const PurchaseOrders = () => {
@@ -301,8 +302,8 @@ const PurchaseOrders = () => {
         <div className="flex items-center gap-4">
 
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Purchase Orders</h1>
-            <p className="text-muted-foreground">Manage purchase orders and supplier transactions</p>
+            <h1 className="text-3xl font-bold text-foreground">Stock Purchase</h1>
+            <p className="text-muted-foreground">Manage stock purchases and supplier transactions</p>
           </div>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -467,37 +468,6 @@ const PurchaseOrders = () => {
                     <TableCell>Rs. {order.total?.toLocaleString()}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleViewOrder(order);
-                          }}
-                        >
-                          <Eye className="h-3 w-3 mr-1" />
-                          View
-                        </Button>
-                        
-                        {getAvailableStatusTransitions(order.status).length > 0 && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditStatus(order);
-                            }}
-                            disabled={updateStatusMutation.isPending}
-                          >
-                            {updateStatusMutation.isPending ? (
-                              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                            ) : (
-                              <Edit className="h-3 w-3 mr-1" />
-                            )}
-                            Update
-                          </Button>
-                        )}
-
                         {order.status === "draft" && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -550,85 +520,15 @@ const PurchaseOrders = () => {
                   
                   {/* Expandable Row Content */}
                   {expandedRow === order.id && (
-                    <TableRow className="bg-muted/30 hover:bg-muted/30">
+                    <TableRow className="bg-muted/20 hover:bg-muted/20">
                       <TableCell colSpan={8} className="p-0">
                         <div className="animate-accordion-down overflow-hidden">
-                          <div className="border-t border-border bg-card/50">
-                            <div className="flex items-center justify-between p-4 bg-primary/10 border-b border-border">
-                              <div className="flex items-center gap-2">
-                                <Package className="h-5 w-5 text-primary" />
-                                <h4 className="font-semibold text-foreground">
-                                  Order Items ({order.items?.length || 0})
-                                </h4>
-                              </div>
-                              <div className="text-sm text-muted-foreground">
-                                Total: <span className="font-semibold text-foreground">Rs. {order.total?.toLocaleString()}</span>
-                              </div>
-                            </div>
-                            
-                            {order.items && order.items.length > 0 ? (
-                              <div className="p-0">
-                                <Table>
-                                  <TableHeader>
-                                    <TableRow className="bg-muted/50">
-                                      <TableHead className="w-12 text-center">#</TableHead>
-                                      <TableHead className="min-w-[300px]">Product Name</TableHead>
-                                      <TableHead className="text-center w-24">Qty</TableHead>
-                                      <TableHead className="text-right w-32">Unit Price</TableHead>
-                                      <TableHead className="text-right w-32">Total</TableHead>
-                                    </TableRow>
-                                  </TableHeader>
-                                  <TableBody>
-                                    {order.items.map((item: any, index: number) => (
-                                      <TableRow 
-                                        key={index} 
-                                        className="hover:bg-muted/30 transition-colors duration-200"
-                                      >
-                                        <TableCell className="text-center text-muted-foreground font-mono">
-                                          {index + 1}
-                                        </TableCell>
-                                        <TableCell className="font-medium">
-                                          <div className="flex flex-col">
-                                            <span className="text-foreground">{item.productName || item.name}</span>
-                                            {item.sku && (
-                                              <span className="text-xs text-muted-foreground">SKU: {item.sku}</span>
-                                            )}
-                                          </div>
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                          <Badge variant="secondary" className="font-mono">
-                                            {item.quantity}
-                                          </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right font-mono text-muted-foreground">
-                                          Rs. {item.unitPrice?.toLocaleString()}
-                                        </TableCell>
-                                        <TableCell className="text-right font-mono font-semibold text-primary">
-                                          Rs. {(item.quantity * item.unitPrice)?.toLocaleString()}
-                                        </TableCell>
-                                      </TableRow>
-                                    ))}
-                                  </TableBody>
-                                </Table>
-                              </div>
-                            ) : (
-                              <div className="text-center py-8 text-muted-foreground">
-                                <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                                <p className="text-sm">No items found in this order</p>
-                              </div>
-                            )}
-                            
-                            {order.notes && (
-                              <div className="px-4 pb-4">
-                                <div className="p-3 bg-muted/50 rounded-lg border border-border">
-                                  <div className="text-sm">
-                                    <span className="font-medium text-foreground">Notes: </span>
-                                    <span className="text-muted-foreground">{order.notes}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
+                          <ExpandedPurchaseOrderRow 
+                            order={order} 
+                            onOrderUpdated={() => {
+                              queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
+                            }}
+                          />
                         </div>
                       </TableCell>
                     </TableRow>
