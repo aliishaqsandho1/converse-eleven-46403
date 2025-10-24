@@ -40,8 +40,8 @@ const Credits = () => {
     try {
       setLoading(true);
       // Fetch ALL customers (increased limit to get all customers)
-      const response = await customersApi.getCreditCustomers({
-        per_page: 10000,
+      const response = await customersApi.getAll({
+        limit: 10000,
         page: 1,
         status: 'active'
       });
@@ -608,7 +608,7 @@ const AddCreditToExistingDialog = ({
   };
 
   return (
-    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-card/60 backdrop-blur-md">
       <DialogHeader>
         <DialogTitle className="text-2xl">Add Credit to Existing Customer</DialogTitle>
       </DialogHeader>
