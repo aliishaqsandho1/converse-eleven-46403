@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -645,61 +646,68 @@ const AddCreditToExistingDialog = ({
                   onValueChange={setSearchQuery}
                   className="h-12"
                 />
-                <CommandList className="max-h-[400px]">
+                <CommandList>
                   <CommandEmpty>No customer found.</CommandEmpty>
                   <CommandGroup>
-                    {safeCustomers
-                      .filter((customer: any) => {
-                        if (!searchQuery) return true;
-                        const query = searchQuery.toLowerCase();
-                        return (
-                          customer.name?.toLowerCase().includes(query) ||
-                          customer.phone?.toLowerCase().includes(query) ||
-                          customer.email?.toLowerCase().includes(query)
-                        );
-                      })
-                      .slice(0, 100) // Show top 100 results
-                      .map((customer: any) => (
-                        <CommandItem
-                          key={customer.id}
-                          value={customer.id.toString()}
-                          onSelect={() => {
-                            setSelectedCustomerId(customer.id);
-                            setOpen(false);
-                            setSearchQuery("");
-                          }}
-                          className="py-3 cursor-pointer"
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4 shrink-0",
-                              selectedCustomerId === customer.id ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                          <div className="flex flex-col gap-1 flex-1">
-                            <div className="flex items-center justify-between">
-                              <span className="font-semibold">{customer.name}</span>
-                              <Badge variant={customer.currentBalance > 0 ? "destructive" : "secondary"}>
-                                PKR {(customer.currentBalance || 0).toLocaleString()}
-                              </Badge>
+                    <ScrollArea className="h-[400px]">
+                      {safeCustomers
+                        .filter((customer: any) => {
+                          if (!searchQuery) return true;
+                          const query = searchQuery.toLowerCase();
+                          return (
+                            customer.name?.toLowerCase().includes(query) ||
+                            customer.phone?.toLowerCase().includes(query) ||
+                            customer.email?.toLowerCase().includes(query)
+                          );
+                        })
+                        .slice(0, 100) // Show top 100 results
+                        .map((customer: any, index: number) => (
+                          <CommandItem
+                            key={customer.id}
+                            value={customer.id.toString()}
+                            onSelect={() => {
+                              setSelectedCustomerId(customer.id);
+                              setOpen(false);
+                              setSearchQuery("");
+                            }}
+                            className="py-3 cursor-pointer"
+                          >
+                            <div className="flex items-center gap-3 w-full">
+                              <span className="text-sm font-medium text-muted-foreground min-w-[2rem]">
+                                {index + 1}.
+                              </span>
+                              <Check
+                                className={cn(
+                                  "h-4 w-4 shrink-0",
+                                  selectedCustomerId === customer.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <div className="flex flex-col gap-1 flex-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-semibold">{customer.name}</span>
+                                  <Badge variant={customer.currentBalance > 0 ? "destructive" : "secondary"}>
+                                    PKR {(customer.currentBalance || 0).toLocaleString()}
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                  {customer.phone && (
+                                    <span className="flex items-center gap-1">
+                                      <Phone className="h-3 w-3" />
+                                      {customer.phone}
+                                    </span>
+                                  )}
+                                  {customer.email && (
+                                    <span className="flex items-center gap-1">
+                                      <Mail className="h-3 w-3" />
+                                      {customer.email}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                              {customer.phone && (
-                                <span className="flex items-center gap-1">
-                                  <Phone className="h-3 w-3" />
-                                  {customer.phone}
-                                </span>
-                              )}
-                              {customer.email && (
-                                <span className="flex items-center gap-1">
-                                  <Mail className="h-3 w-3" />
-                                  {customer.email}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </CommandItem>
-                      ))}
+                          </CommandItem>
+                        ))}
+                    </ScrollArea>
                   </CommandGroup>
                 </CommandList>
               </Command>
