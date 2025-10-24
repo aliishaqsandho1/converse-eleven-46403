@@ -59,7 +59,7 @@ const Sales = () => {
   const [isCustomerDialogOpen, setIsCustomerDialogOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isCartCollapsed, setIsCartCollapsed] = useState(false);
-  const [productsLayout, setProductsLayout] = useState(5); // Default to 5 products per line
+  const [productsLayout, setProductsLayout] = useState(1); // Default to slim view
   const [isProcessingSale, setIsProcessingSale] = useState(false); // Prevent double-clicking complete sale
 
   // Load layout preference from localStorage

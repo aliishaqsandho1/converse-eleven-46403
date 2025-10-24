@@ -307,7 +307,7 @@ export const PincodeProtection: React.FC<PincodeProtectionProps> = ({
             {/* Holographic Frame */}
             <div className="absolute -inset-4 bg-gradient-to-r from-primary/10 via-primary/10 to-primary/10 rounded-2xl blur-xl animate-pulse"></div>
             
-            <Card className="relative backdrop-blur-xl bg-card/80 border border-primary/30 shadow-2xl shadow-primary/20 rounded-2xl overflow-hidden max-w-md mx-auto">
+            <Card className="relative backdrop-blur-xl bg-card/60 border border-primary/30 shadow-2xl shadow-primary/20 rounded-2xl overflow-hidden max-w-md mx-auto">
               {/* Tech Frame */}
               <div className="absolute inset-0 border border-primary/20 rounded-2xl"></div>
               <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-primary rounded-tl-2xl"></div>
@@ -318,13 +318,18 @@ export const PincodeProtection: React.FC<PincodeProtectionProps> = ({
               <CardContent className="p-8 space-y-8">
                 {/* Central Security Logo */}
                 <div className="text-center space-y-3">
-                  <div className="relative inline-block">
+                  <button
+                    onClick={handleTempUnlock}
+                    className="relative inline-block cursor-pointer group"
+                    title="Click to unlock for 1 hour"
+                    disabled={isLocked}
+                  >
                     <div className="absolute inset-0 bg-primary rounded-full blur-lg opacity-50 animate-pulse"></div>
-                    <div className="relative w-20 h-20 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center shadow-lg shadow-primary/50">
+                    <div className="relative w-20 h-20 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center shadow-lg shadow-primary/50 transition-transform duration-300 group-hover:scale-110 group-active:scale-95">
                       <Shield className="w-10 h-10 text-primary-foreground animate-pulse" />
                       <div className="absolute inset-0 border-2 border-primary-foreground/30 rounded-full animate-spin" style={{ animationDuration: '3s' }}></div>
                     </div>
-                  </div>
+                  </button>
                   <h2 className="text-2xl font-bold text-foreground tracking-wider">
                     USMAN HARDWARES
                   </h2>
@@ -381,24 +386,6 @@ export const PincodeProtection: React.FC<PincodeProtectionProps> = ({
                     </div>
                   )}
 
-                  {/* Futuristic Action Buttons */}
-                  <div className="space-y-4">
-                    {/* Temporal Access Button */}
-                    {!isTempUnlocked && (
-                      <Button
-                        onClick={handleTempUnlock}
-                        title="Press before entering PIN for 1-hour access"
-                        className="w-full h-14 bg-gradient-to-r from-primary/50 to-primary/70 hover:from-primary/70 hover:to-primary/90 text-primary-foreground font-mono font-bold text-lg border-2 border-primary/40 hover:border-primary/60 transition-all duration-300 rounded-lg backdrop-blur-sm relative overflow-hidden group"
-                      >
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary-foreground/20 to-transparent -skew-x-12 translate-x-full transition-transform duration-700 group-hover:translate-x-0"></div>
-                        <div className="flex items-center gap-3 relative z-10">
-                          <Clock className="w-5 h-5 animate-spin" style={{ animationDuration: '4s' }} />
-                          <Zap className="w-5 h-5 animate-pulse" />
-                          <span>TEMPORAL ACCESS [1H]</span>
-                        </div>
-                      </Button>
-                    )}
-                  </div>
                 </div>
               </CardContent>
             </Card>

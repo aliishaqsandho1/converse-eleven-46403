@@ -611,68 +611,110 @@ const Products = () => {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 overflow-y-auto">
-                {products.map((product) => (
-                  <Card key={product.id} className="hover:shadow-lg transition-shadow">
-                    <CardContent className="p-4">
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <h3 className="font-medium text-foreground text-sm">{product.name}</h3>
-                            <p className="text-xs text-muted-foreground">SKU: {product.sku}</p>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Badge className={`text-xs ${getCategoryColor(product.category)}`}>
-                              {product.category}
-                            </Badge>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-6 w-6 p-0"
-                              onClick={() => openProductDetails(product)}
-                            >
-                              <Eye className="h-3 w-3" />
-                            </Button>
-                          </div>
+              <div className="space-y-2 overflow-y-auto">
+                {products.map((product, index) => {
+                  const hasIncompleteQuantity = product.incompleteQuantity || product.needsQuantityUpdate;
+                  const isOutOfStock = !hasIncompleteQuantity && (product.stock || 0) <= 0;
+                  
+                  return (
+                    <div 
+                      key={product.id} 
+                      className={`flex items-center gap-2 p-2 border rounded-lg hover:shadow-sm transition-all duration-200 ${
+                        hasIncompleteQuantity
+                          ? 'border-orange-300 bg-orange-50 dark:border-orange-600 dark:bg-orange-900/20'
+                          : isOutOfStock
+                          ? 'border-red-300 bg-red-50 dark:border-red-600 dark:bg-red-900/20'
+                          : 'border-border bg-card'
+                      }`}
+                    >
+                      {/* Product Index */}
+                      <div className="flex-shrink-0 w-8 text-center">
+                        <span className="text-xs font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
+                          {index + 1}
+                        </span>
+                      </div>
+
+                      {/* Stock Status Warning */}
+                      {(hasIncompleteQuantity || isOutOfStock) && (
+                        <div className="flex-shrink-0" title={
+                          hasIncompleteQuantity 
+                            ? (product.quantityNote || "Incomplete quantity information")
+                            : "Out of stock"
+                        }>
+                          <AlertTriangle className={`h-4 w-4 ${
+                            isOutOfStock ? 'text-red-600' : 'text-orange-600'
+                          }`} />
                         </div>
-                        
-                        <div className="flex justify-between items-center">
-                          <span className="text-lg font-bold text-green-600">PKR {product.price?.toLocaleString()}</span>
-                          <span className="text-xs text-muted-foreground">per {product.unit}</span>
+                      )}
+
+                      {/* Product Name */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-sm truncate" title={product.name}>
+                          {product.name}
+                        </h3>
+                      </div>
+
+                      {/* SKU */}
+                      <div className="w-24 flex-shrink-0">
+                        <p className="text-xs text-muted-foreground truncate" title={product.sku}>
+                          {product.sku}
+                        </p>
+                      </div>
+
+                      {/* Category */}
+                      <div className="w-32 flex-shrink-0">
+                        <Badge className={`text-xs ${getCategoryColor(product.category)}`}>
+                          {product.category}
+                        </Badge>
+                      </div>
+
+                      {/* Price */}
+                      <div className="w-32 flex-shrink-0">
+                        <div className="text-sm font-bold text-blue-600">
+                          PKR {product.price?.toLocaleString()}
                         </div>
-                        
-                        <div className="flex justify-between items-center">
-                          <Badge variant={product.stock <= product.minStock ? "destructive" : "default"}>
-                            {formatQuantity(product.stock)} {product.unit}s
-                          </Badge>
-                          {product.stock <= product.minStock && (
-                            <AlertTriangle className="h-4 w-4 text-red-500" />
+                        <div className="text-[10px] text-muted-foreground">
+                          {hasIncompleteQuantity ? (
+                            <span className="text-orange-600 font-medium">Unknown qty</span>
+                          ) : isOutOfStock ? (
+                            <span className="text-red-600 font-medium">Out of stock</span>
+                          ) : (
+                            <>{formatQuantity(product.stock)} {product.unit}</>
                           )}
                         </div>
-                        
-                        <div className="flex gap-2">
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="flex-1"
-                            onClick={() => openEditDialog(product)}
-                          >
-                            <Edit className="h-3 w-3 mr-1" />
-                            Edit
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="text-red-600 hover:text-red-700"
-                            onClick={() => handleDeleteProduct(product.id)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 w-8 p-0"
+                          onClick={() => openProductDetails(product)}
+                        >
+                          <Eye className="h-4 w-4 text-muted-foreground hover:text-blue-600" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="h-8"
+                          onClick={() => openEditDialog(product)}
+                        >
+                          <Edit className="h-3 w-3 mr-1" />
+                          Edit
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="text-red-600 hover:text-red-700 h-8"
+                          onClick={() => handleDeleteProduct(product.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               {pagination.totalPages > 1 && (
