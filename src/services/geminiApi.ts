@@ -1,4 +1,4 @@
-export const GEMINI_API_KEY = "AIzaSyBm-JYWO7AtzUPM8_BEEMSqaARcRqHKWPA";
+export const GEMINI_API_KEY = "AIzaSyCa4pclqzhR4PaUyr81irTxp1rPQzEK3IU";
 export const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
 export interface GeminiMessage {
@@ -210,58 +210,5 @@ Analyze this image and extract relevant business data. Return JSON with:
         response: 'I had trouble analyzing the image. Please try uploading a clearer image.'
       };
     }
-  }
-
-  static async translateToUrdu(text: string): Promise<string> {
-    const systemPrompt = `You are a translator. Translate the following English text to Urdu. Only return the Urdu translation, nothing else.
-
-Text: "${text}"`;
-
-    const request: GeminiRequest = {
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: systemPrompt }]
-        }
-      ],
-      generationConfig: {
-        temperature: 0.1,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 256,
-      }
-    };
-
-    const response = await this.makeRequest(request);
-    return response.trim();
-  }
-
-  static async convertToProperUrdu(textOrPrompt: string): Promise<string> {
-    // Check if it's an edit prompt (contains "Current message")
-    const isEditPrompt = textOrPrompt.includes('Current message');
-    
-    const systemPrompt = isEditPrompt 
-      ? textOrPrompt // Use the prompt as-is for editing
-      : `You are an Urdu language expert. Convert the following spoken/transcribed text into properly written formal Urdu. Make it professional and suitable for business communication. Only return the properly formatted Urdu text, nothing else.
-
-Spoken text: "${textOrPrompt}"`;
-
-    const request: GeminiRequest = {
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: systemPrompt }]
-        }
-      ],
-      generationConfig: {
-        temperature: 0.2,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 512,
-      }
-    };
-
-    const response = await this.makeRequest(request);
-    return response.trim();
   }
 }

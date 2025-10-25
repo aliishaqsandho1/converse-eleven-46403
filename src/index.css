@@ -268,13 +268,3 @@
     100% { transform: translateX(700%); }
   }
 }
-
-/* Urdu Font Support */
-@import url('https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap');
-
-.font-urdu {
-  font-family: 'Noto Nastaliq Urdu', serif;
-  direction: rtl;
-  text-align: right;
-  line-height: 2;
-}
