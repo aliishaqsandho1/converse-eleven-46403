@@ -59,6 +59,29 @@ export const ExpandedOrderRow = ({ order, onOrderUpdated }: ExpandedOrderRowProp
   
   const [isLoading, setIsLoading] = useState(false);
 
+  // Live calculations for return flow
+  const computedRefund = React.useMemo(() => {
+    let sum = 0;
+    order.items.forEach((item) => {
+      const qty = returnQuantities[item.productId] || 0;
+      if (qty > 0) sum += qty * item.unitPrice;
+    });
+    return Number(sum.toFixed(2));
+  }, [order.items, returnQuantities]);
+
+  const newSubtotal = React.useMemo(
+    () => Number((order.subtotal - computedRefund).toFixed(2)),
+    [order.subtotal, computedRefund]
+  );
+
+  const newTotal = React.useMemo(
+    () => Number((order.total - computedRefund).toFixed(2)),
+    [order.total, computedRefund]
+  );
+
+  const formatCurrency = (val: number) =>
+    `Rs. ${val.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, string> = {
       completed: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20",
@@ -186,10 +209,11 @@ export const ExpandedOrderRow = ({ order, onOrderUpdated }: ExpandedOrderRowProp
         items: itemsToReturn.map(([productId, quantity]) => ({
           productId: parseInt(productId),
           quantity,
-          reason: "customer_request"
+          reason: "customer_request",
         })),
-        adjustmentReason: returnNotes || "Order adjustment - items returned",
-        restockItems: true
+        adjustmentReason: returnNotes || "Order adjustment - items returned after completion",
+        refundAmount: computedRefund,
+        restockItems: true,
       };
 
       await salesApi.adjustOrder(order.id, returnData);
@@ -360,15 +384,25 @@ export const ExpandedOrderRow = ({ order, onOrderUpdated }: ExpandedOrderRowProp
           </h4>
           <div className="flex items-center gap-3">
             <div className="text-sm text-muted-foreground">
-              Subtotal: <span className="font-semibold text-foreground">Rs. {order.subtotal.toLocaleString()}</span>
-              <span className="mx-2">•</span>
-              Total: <span className="font-bold text-primary">Rs. {(order.subtotal - order.discount).toLocaleString()}</span>
+              {isReturning ? (
+                <>
+                  Refund: <span className="font-semibold text-foreground">{formatCurrency(computedRefund)}</span>
+                  <span className="mx-2">•</span>
+                  New Total: <span className="font-bold text-primary">{formatCurrency(newTotal)}</span>
+                </>
+              ) : (
+                <>
+                  Subtotal: <span className="font-semibold text-foreground">{formatCurrency(order.subtotal)}</span>
+                  <span className="mx-2">•</span>
+                  Total: <span className="font-bold text-primary">{formatCurrency(order.total)}</span>
+                </>
+              )}
             </div>
             {isReturning ? (
               <div className="flex items-center gap-2">
-                <Button size="sm" onClick={handleReturn} disabled={isLoading} className="h-7">
+                <Button size="sm" onClick={handleReturn} disabled={isLoading || computedRefund <= 0} className="h-7">
                   <Save className="h-3 w-3 mr-1" />
-                  Process Return
+                  Process Return {computedRefund > 0 ? `(${formatCurrency(computedRefund)})` : ""}
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => {
                   setIsReturning(false);
