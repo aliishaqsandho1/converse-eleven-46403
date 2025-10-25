@@ -190,8 +190,8 @@ const Credits = () => {
       const defaultMessage = `محترم ${customer.name}،\n\nآپ کا بقایا PKR ${Math.abs(customer.currentBalance || 0).toLocaleString()} ہے۔ براہ کرم جلد از جلد ادائیگی کر دیں۔\n\nآپ کا شکریہ`;
       setMessageText(defaultMessage);
       toast({
-        title: "Translation Failed",
-        description: "Using default message template",
+        title: "ترجمہ ناکام",
+        description: "ڈیفالٹ پیغام استعمال کیا جا رہا ہے",
         variant: "destructive"
       });
     } finally {
@@ -274,16 +274,16 @@ const Credits = () => {
         setShowPreview(true);
         
         toast({
-          title: "Voice Edit Ready",
-          description: "Please review the edited message",
+          title: "تبدیلی تیار ہے",
+          description: "آواز سے ترمیم شدہ پیغام دیکھیں",
         });
       };
 
       recognition.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
         toast({
-          title: "Recognition Error",
-          description: "Could not understand speech. Please try again",
+          title: "آواز کی خرابی",
+          description: "آواز سمجھ نہیں آئی۔ دوبارہ کوشش کریں",
           variant: "destructive"
         });
       };
@@ -292,8 +292,8 @@ const Credits = () => {
     } catch (error) {
       console.error('Audio processing error:', error);
       toast({
-        title: "Processing Error",
-        description: "Could not process audio",
+        title: "پروسیسنگ کی خرابی",
+        description: "آڈیو پروسیس نہیں ہو سکا",
         variant: "destructive"
       });
     } finally {
@@ -306,8 +306,8 @@ const Credits = () => {
     setShowPreview(false);
     setVoiceEditedMessage("");
     toast({
-      title: "Message Updated",
-      description: "Voice edit has been applied successfully",
+      title: "منظور شدہ",
+      description: "پیغام اپ ڈیٹ ہو گیا",
     });
   };
 
@@ -565,73 +565,73 @@ const Credits = () => {
 
       {/* WhatsApp Message Modal */}
       <Dialog open={isMessageModalOpen} onOpenChange={setIsMessageModalOpen}>
-        <DialogContent className="sm:max-w-3xl">
+        <DialogContent className="sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-3 text-2xl">
-              <div className="h-12 w-12 rounded-full bg-gradient-to-br from-green-500/20 to-green-600/20 flex items-center justify-center">
-                <MessageCircle className="h-6 w-6 text-green-600" />
+            <DialogTitle className="flex items-center gap-2 text-lg">
+              <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center">
+                <MessageCircle className="h-5 w-5 text-green-600" />
               </div>
-              <span>Send WhatsApp Message</span>
+              <span>واٹس ایپ پیغام بھیجیں</span>
             </DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-6 mt-2">
+          <div className="space-y-4">
             {/* Customer Info Card */}
             {selectedCustomer && (
-              <div className="p-5 bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 rounded-xl border-2 border-primary/20 space-y-3 shadow-sm">
-                <div className="flex items-center justify-between pb-3 border-b border-primary/20">
-                  <span className="text-sm text-muted-foreground font-semibold uppercase tracking-wide">Customer Details</span>
+              <div className="p-4 bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg border border-primary/20 space-y-2">
+                <div className="flex items-center justify-between pb-2 border-b border-primary/20">
+                  <span className="text-xs text-muted-foreground font-medium">گاہک کی تفصیلات</span>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <span className="text-xs text-muted-foreground font-medium">Name</span>
-                    <p className="font-bold text-base text-foreground">{selectedCustomer.name}</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <span className="text-xs text-muted-foreground">نام</span>
+                    <p className="font-semibold text-sm">{selectedCustomer.name}</p>
                   </div>
                   {selectedCustomer.phone && (
-                    <div className="space-y-1.5">
-                      <span className="text-xs text-muted-foreground font-medium">Phone</span>
-                      <p className="font-bold text-base text-foreground">{selectedCustomer.phone}</p>
+                    <div className="space-y-1">
+                      <span className="text-xs text-muted-foreground">فون</span>
+                      <p className="font-semibold text-sm">{selectedCustomer.phone}</p>
                     </div>
                   )}
                 </div>
-                <div className="pt-3 border-t border-primary/20">
+                <div className="pt-2 border-t border-primary/20">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground font-medium">Outstanding Balance</span>
-                    <span className="text-2xl font-bold text-red-600">PKR {Math.abs(selectedCustomer.currentBalance || 0).toLocaleString()}</span>
+                    <span className="text-xs text-muted-foreground">بقایا</span>
+                    <span className="text-lg font-bold text-red-600">PKR {Math.abs(selectedCustomer.currentBalance || 0).toLocaleString()}</span>
                   </div>
                 </div>
               </div>
             )}
 
             {/* Message Editor */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="message" className="text-base font-semibold">Message (Urdu)</Label>
+                <Label htmlFor="message" className="text-sm font-medium">پیغام</Label>
                 <Button
                   type="button"
-                  size="default"
+                  size="sm"
                   variant={isRecording ? "destructive" : "outline"}
                   onClick={isRecording ? stopRecording : startRecording}
                   disabled={isTranslating}
                   className={cn(
-                    "h-10 px-4 gap-2 transition-all font-medium",
+                    "h-8 px-3 gap-2 transition-all",
                     isRecording && "animate-pulse"
                   )}
                 >
                   {isRecording ? (
                     <>
-                      <div className="h-2.5 w-2.5 rounded-full bg-white animate-pulse" />
-                      Stop Recording
+                      <div className="h-2 w-2 rounded-full bg-white" />
+                      رک جائیں
                     </>
                   ) : isTranslating ? (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Processing...
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      پروسیس ہو رہا ہے
                     </>
                   ) : (
                     <>
-                      <Mic className="h-4 w-4" />
-                      Voice Edit
+                      <Mic className="h-3 w-3" />
+                      آواز سے ترمیم کریں
                     </>
                   )}
                 </Button>
@@ -641,28 +641,27 @@ const Credits = () => {
                 id="message"
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
-                rows={8}
-                className="resize-none font-urdu text-lg leading-relaxed border-2 focus:border-primary/50 shadow-sm"
-                placeholder="Your message will appear here in Urdu..."
+                rows={6}
+                className="resize-none font-urdu text-base leading-relaxed border-2 focus:border-primary/50"
+                placeholder="آپ کا پیغام یہاں لکھیں..."
                 disabled={isTranslating}
                 dir="rtl"
               />
               
-              <div className="flex items-start gap-2 text-sm text-muted-foreground p-3 bg-muted/40 rounded-lg border">
-                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+              <div className="flex items-start gap-2 text-xs text-muted-foreground p-2 bg-muted/30 rounded">
+                <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
                 <span>
                   {isTranslating 
-                    ? "Translating customer name to Urdu..." 
-                    : "Click 'Voice Edit' to record instructions for modifying the message. Speak your changes and approve them."}
+                    ? "گاہک کا نام اردو میں ترجمہ ہو رہا ہے..." 
+                    : "پیغام میں تبدیلی کرنے کے لیے 'آواز سے ترمیم کریں' پر کلک کریں اور بولیں"}
                 </span>
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex justify-end gap-3 pt-2 border-t">
+            <div className="flex justify-end gap-2 pt-2">
               <Button 
-                variant="outline"
-                size="lg"
+                variant="outline" 
                 onClick={() => {
                   setIsMessageModalOpen(false);
                   setMessageText("");
@@ -671,16 +670,15 @@ const Credits = () => {
                 }}
                 disabled={isTranslating}
               >
-                Cancel
+                منسوخ کریں
               </Button>
               <Button 
-                size="lg"
-                className="bg-green-600 hover:bg-green-700 gap-2 font-semibold"
+                className="bg-green-600 hover:bg-green-700 gap-2"
                 onClick={handleSendWhatsApp}
                 disabled={isTranslating || !messageText.trim()}
               >
-                <MessageCircle className="h-5 w-5" />
-                Send on WhatsApp
+                <MessageCircle className="h-4 w-4" />
+                واٹس ایپ پر بھیجیں
               </Button>
             </div>
           </div>
@@ -689,52 +687,48 @@ const Credits = () => {
 
       {/* Voice Edit Preview Modal */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="sm:max-w-3xl">
+        <DialogContent className="sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-3 text-2xl">
-              <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-500/20 to-blue-600/20 flex items-center justify-center">
-                <Mic className="h-6 w-6 text-blue-600" />
+            <DialogTitle className="flex items-center gap-2">
+              <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center">
+                <Mic className="h-5 w-5 text-blue-600" />
               </div>
-              <span>Review Voice Edited Message</span>
+              <span>آواز سے ترمیم شدہ پیغام</span>
             </DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-5 mt-2">
+          <div className="space-y-4">
             {/* Original Message */}
             <div className="space-y-2">
-              <Label className="text-sm text-muted-foreground font-semibold uppercase tracking-wide">Original Message</Label>
-              <div className="p-4 bg-muted/40 rounded-xl border-2 font-urdu text-base leading-relaxed shadow-sm" dir="rtl">
+              <Label className="text-xs text-muted-foreground">اصل پیغام</Label>
+              <div className="p-3 bg-muted/30 rounded-lg border font-urdu text-sm leading-relaxed" dir="rtl">
                 {messageText}
               </div>
             </div>
 
             {/* Edited Message */}
             <div className="space-y-2">
-              <Label className="text-sm text-green-600 font-semibold uppercase tracking-wide flex items-center gap-2">
-                <Check className="h-4 w-4" />
-                Edited Message (Preview)
-              </Label>
-              <div className="p-5 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-950/20 rounded-xl border-2 border-green-300 dark:border-green-800 font-urdu text-base leading-relaxed shadow-md" dir="rtl">
+              <Label className="text-xs text-green-600 font-medium">ترمیم شدہ پیغام</Label>
+              <div className="p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border-2 border-green-200 dark:border-green-800 font-urdu text-sm leading-relaxed" dir="rtl">
                 {voiceEditedMessage}
               </div>
             </div>
 
             {/* Preview Actions */}
-            <div className="flex items-center justify-end pt-4 gap-3 border-t">
+            <div className="flex items-center justify-between pt-2 gap-2">
               <Button 
-                variant="outline"
-                size="lg"
+                variant="outline" 
                 onClick={handleRejectEdit}
+                className="flex-1"
               >
-                Reject Changes
+                منسوخ کریں
               </Button>
               <Button 
                 onClick={handleApproveEdit}
-                size="lg"
-                className="bg-green-600 hover:bg-green-700 gap-2 font-semibold"
+                className="flex-1 bg-green-600 hover:bg-green-700 gap-2"
               >
-                <Check className="h-5 w-5" />
-                Approve & Use This Message
+                <Check className="h-4 w-4" />
+                منظور کریں اور استعمال کریں
               </Button>
             </div>
           </div>
