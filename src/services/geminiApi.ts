@@ -236,10 +236,15 @@ Text: "${text}"`;
     return response.trim();
   }
 
-  static async convertToProperUrdu(spokenText: string): Promise<string> {
-    const systemPrompt = `You are an Urdu language expert. Convert the following spoken/transcribed text into properly written formal Urdu. Make it professional and suitable for business communication. Only return the properly formatted Urdu text, nothing else.
+  static async convertToProperUrdu(textOrPrompt: string): Promise<string> {
+    // Check if it's an edit prompt (contains "Current message")
+    const isEditPrompt = textOrPrompt.includes('Current message');
+    
+    const systemPrompt = isEditPrompt 
+      ? textOrPrompt // Use the prompt as-is for editing
+      : `You are an Urdu language expert. Convert the following spoken/transcribed text into properly written formal Urdu. Make it professional and suitable for business communication. Only return the properly formatted Urdu text, nothing else.
 
-Spoken text: "${spokenText}"`;
+Spoken text: "${textOrPrompt}"`;
 
     const request: GeminiRequest = {
       contents: [

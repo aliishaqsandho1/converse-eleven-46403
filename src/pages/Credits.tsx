@@ -38,6 +38,8 @@ const Credits = () => {
   const [isAddCreditToExistingOpen, setIsAddCreditToExistingOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
+  const [voiceEditedMessage, setVoiceEditedMessage] = useState<string>("");
+  const [showPreview, setShowPreview] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
@@ -174,19 +176,22 @@ const Credits = () => {
     setSelectedCustomer(customer);
     setIsTranslating(true);
     setIsMessageModalOpen(true);
+    setShowPreview(false);
+    setVoiceEditedMessage("");
     
     try {
-      // Translate customer name to Urdu
+      // Only translate customer name to Urdu
       const urduName = await GeminiService.translateToUrdu(customer.name);
-      const defaultMessage = `محترم ${urduName}، آپ کا بقایا PKR ${(customer.currentBalance || 0).toLocaleString()} ہے۔ براہ کرم جلد از جلد ادائیگی کریں۔ شکریہ!`;
+      // Pre-written Urdu message template
+      const defaultMessage = `محترم ${urduName}،\n\nآپ کا بقایا PKR ${Math.abs(customer.currentBalance || 0).toLocaleString()} ہے۔ براہ کرم جلد از جلد ادائیگی کر دیں۔\n\nآپ کا شکریہ،\n${await GeminiService.translateToUrdu("Management")}`;
       setMessageText(defaultMessage);
     } catch (error) {
       console.error('Translation error:', error);
-      // Fallback to English
-      setMessageText(`Dear ${customer.name}, your outstanding balance is PKR ${(customer.currentBalance || 0).toLocaleString()}. Please settle your dues at your earliest convenience. Thank you!`);
+      const defaultMessage = `محترم ${customer.name}،\n\nآپ کا بقایا PKR ${Math.abs(customer.currentBalance || 0).toLocaleString()} ہے۔ براہ کرم جلد از جلد ادائیگی کر دیں۔\n\nآپ کا شکریہ`;
+      setMessageText(defaultMessage);
       toast({
-        title: "Translation Failed",
-        description: "Using English message instead",
+        title: "ترجمہ ناکام",
+        description: "ڈیفالٹ پیغام استعمال کیا جا رہا ہے",
         variant: "destructive"
       });
     } finally {
@@ -254,28 +259,31 @@ const Credits = () => {
     try {
       // Use Web Speech API for transcription
       const recognition = new (window as any).webkitSpeechRecognition();
-      recognition.lang = 'ur-PK'; // Urdu language
+      recognition.lang = 'ur-PK';
       recognition.continuous = false;
       recognition.interimResults = false;
 
       recognition.onresult = async (event: any) => {
         const transcript = event.results[0][0].transcript;
         
-        // Convert spoken text to proper written Urdu using Gemini
-        const properUrdu = await GeminiService.convertToProperUrdu(transcript);
-        setMessageText(properUrdu);
+        // Send current message + voice input to Gemini for editing
+        const editPrompt = `Current message in Urdu:\n${messageText}\n\nUser wants to edit it with this voice instruction: "${transcript}"\n\nPlease provide the edited Urdu message based on the user's instruction. Only return the final message in proper Urdu, nothing else.`;
+        
+        const editedMessage = await GeminiService.convertToProperUrdu(editPrompt);
+        setVoiceEditedMessage(editedMessage);
+        setShowPreview(true);
         
         toast({
-          title: "Voice Converted",
-          description: "Your voice has been converted to Urdu text",
+          title: "تبدیلی تیار ہے",
+          description: "آواز سے ترمیم شدہ پیغام دیکھیں",
         });
       };
 
       recognition.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
         toast({
-          title: "Recognition Error",
-          description: "Could not recognize speech. Please try again.",
+          title: "آواز کی خرابی",
+          description: "آواز سمجھ نہیں آئی۔ دوبارہ کوشش کریں",
           variant: "destructive"
         });
       };
@@ -284,13 +292,28 @@ const Credits = () => {
     } catch (error) {
       console.error('Audio processing error:', error);
       toast({
-        title: "Processing Error",
-        description: "Could not process audio",
+        title: "پروسیسنگ کی خرابی",
+        description: "آڈیو پروسیس نہیں ہو سکا",
         variant: "destructive"
       });
     } finally {
       setIsTranslating(false);
     }
+  };
+
+  const handleApproveEdit = () => {
+    setMessageText(voiceEditedMessage);
+    setShowPreview(false);
+    setVoiceEditedMessage("");
+    toast({
+      title: "منظور شدہ",
+      description: "پیغام اپ ڈیٹ ہو گیا",
+    });
+  };
+
+  const handleRejectEdit = () => {
+    setShowPreview(false);
+    setVoiceEditedMessage("");
   };
 
   // Filter logic
@@ -540,94 +563,172 @@ const Credits = () => {
         </>
       )}
 
-      {/* Message Modal */}
+      {/* WhatsApp Message Modal */}
       <Dialog open={isMessageModalOpen} onOpenChange={setIsMessageModalOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <MessageCircle className="h-5 w-5 text-green-600" />
-              Send WhatsApp Message
+            <DialogTitle className="flex items-center gap-2 text-lg">
+              <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center">
+                <MessageCircle className="h-5 w-5 text-green-600" />
+              </div>
+              <span>واٹس ایپ پیغام بھیجیں</span>
             </DialogTitle>
           </DialogHeader>
+          
           <div className="space-y-4">
+            {/* Customer Info Card */}
             {selectedCustomer && (
-              <div className="bg-muted/50 p-3 rounded-lg space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Sending to:</span>
-                  <span className="font-semibold text-foreground">{selectedCustomer.name}</span>
+              <div className="p-4 bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg border border-primary/20 space-y-2">
+                <div className="flex items-center justify-between pb-2 border-b border-primary/20">
+                  <span className="text-xs text-muted-foreground font-medium">گاہک کی تفصیلات</span>
                 </div>
-                {selectedCustomer.phone && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Phone:</span>
-                    <span className="font-semibold text-foreground">{selectedCustomer.phone}</span>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <span className="text-xs text-muted-foreground">نام</span>
+                    <p className="font-semibold text-sm">{selectedCustomer.name}</p>
                   </div>
-                )}
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Balance:</span>
-                  <span className="font-bold text-red-600">PKR {Math.abs(selectedCustomer.currentBalance || 0).toLocaleString()}</span>
+                  {selectedCustomer.phone && (
+                    <div className="space-y-1">
+                      <span className="text-xs text-muted-foreground">فون</span>
+                      <p className="font-semibold text-sm">{selectedCustomer.phone}</p>
+                    </div>
+                  )}
+                </div>
+                <div className="pt-2 border-t border-primary/20">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">بقایا</span>
+                    <span className="text-lg font-bold text-red-600">PKR {Math.abs(selectedCustomer.currentBalance || 0).toLocaleString()}</span>
+                  </div>
                 </div>
               </div>
             )}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <Label htmlFor="message">Message</Label>
+
+            {/* Message Editor */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="message" className="text-sm font-medium">پیغام</Label>
                 <Button
                   type="button"
                   size="sm"
                   variant={isRecording ? "destructive" : "outline"}
                   onClick={isRecording ? stopRecording : startRecording}
                   disabled={isTranslating}
-                  className="h-7"
+                  className={cn(
+                    "h-8 px-3 gap-2 transition-all",
+                    isRecording && "animate-pulse"
+                  )}
                 >
                   {isRecording ? (
                     <>
-                      <div className="h-2 w-2 rounded-full bg-white animate-pulse mr-2" />
-                      Stop Recording
+                      <div className="h-2 w-2 rounded-full bg-white" />
+                      رک جائیں
                     </>
                   ) : isTranslating ? (
                     <>
-                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                      Processing...
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      پروسیس ہو رہا ہے
                     </>
                   ) : (
                     <>
-                      <Mic className="h-3 w-3 mr-1" />
-                      Voice Input
+                      <Mic className="h-3 w-3" />
+                      آواز سے ترمیم کریں
                     </>
                   )}
                 </Button>
               </div>
+              
               <Textarea
                 id="message"
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
-                rows={5}
-                className="resize-none font-urdu"
+                rows={6}
+                className="resize-none font-urdu text-base leading-relaxed border-2 focus:border-primary/50"
                 placeholder="آپ کا پیغام یہاں لکھیں..."
                 disabled={isTranslating}
+                dir="rtl"
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                {isTranslating ? "Translating customer name..." : "Click Voice Input to speak your message in Urdu"}
-              </p>
+              
+              <div className="flex items-start gap-2 text-xs text-muted-foreground p-2 bg-muted/30 rounded">
+                <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
+                <span>
+                  {isTranslating 
+                    ? "گاہک کا نام اردو میں ترجمہ ہو رہا ہے..." 
+                    : "پیغام میں تبدیلی کرنے کے لیے 'آواز سے ترمیم کریں' پر کلک کریں اور بولیں"}
+                </span>
+              </div>
             </div>
-            <div className="flex justify-end gap-2">
+
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-2 pt-2">
               <Button 
                 variant="outline" 
                 onClick={() => {
                   setIsMessageModalOpen(false);
                   setMessageText("");
+                  setShowPreview(false);
+                  setVoiceEditedMessage("");
                 }}
                 disabled={isTranslating}
               >
-                Cancel
+                منسوخ کریں
               </Button>
               <Button 
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-green-600 hover:bg-green-700 gap-2"
                 onClick={handleSendWhatsApp}
                 disabled={isTranslating || !messageText.trim()}
               >
-                <MessageCircle className="h-4 w-4 mr-2" />
-                Send via WhatsApp
+                <MessageCircle className="h-4 w-4" />
+                واٹس ایپ پر بھیجیں
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Voice Edit Preview Modal */}
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center">
+                <Mic className="h-5 w-5 text-blue-600" />
+              </div>
+              <span>آواز سے ترمیم شدہ پیغام</span>
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Original Message */}
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">اصل پیغام</Label>
+              <div className="p-3 bg-muted/30 rounded-lg border font-urdu text-sm leading-relaxed" dir="rtl">
+                {messageText}
+              </div>
+            </div>
+
+            {/* Edited Message */}
+            <div className="space-y-2">
+              <Label className="text-xs text-green-600 font-medium">ترمیم شدہ پیغام</Label>
+              <div className="p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border-2 border-green-200 dark:border-green-800 font-urdu text-sm leading-relaxed" dir="rtl">
+                {voiceEditedMessage}
+              </div>
+            </div>
+
+            {/* Preview Actions */}
+            <div className="flex items-center justify-between pt-2 gap-2">
+              <Button 
+                variant="outline" 
+                onClick={handleRejectEdit}
+                className="flex-1"
+              >
+                منسوخ کریں
+              </Button>
+              <Button 
+                onClick={handleApproveEdit}
+                className="flex-1 bg-green-600 hover:bg-green-700 gap-2"
+              >
+                <Check className="h-4 w-4" />
+                منظور کریں اور استعمال کریں
               </Button>
             </div>
           </div>
