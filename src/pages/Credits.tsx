@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,12 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CreditCard, Search, Plus, Users, AlertCircle, Phone, Mail, MapPin, DollarSign, History, MessageCircle, RefreshCw, Check, ChevronsUpDown } from "lucide-react";
+import { CreditCard, Search, Plus, Users, AlertCircle, Phone, Mail, MapPin, DollarSign, History, MessageCircle, RefreshCw, Check, ChevronsUpDown, Mic, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { customersApi } from "@/services/api";
 import { useCustomerBalance } from "@/hooks/useCustomerBalance";
 import { format } from "date-fns";
+import { GeminiService } from "@/services/geminiApi";
 
 const Credits = () => {
   const { toast } = useToast();
@@ -35,6 +36,10 @@ const Credits = () => {
   const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
   const [messageText, setMessageText] = useState("");
   const [isAddCreditToExistingOpen, setIsAddCreditToExistingOpen] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
   const fetchAllCustomers = useCallback(async () => {
     try {
@@ -165,10 +170,28 @@ const Credits = () => {
     }
   };
 
-  const handleSendMessage = (customer: any) => {
+  const handleSendMessage = async (customer: any) => {
     setSelectedCustomer(customer);
-    setMessageText(`Dear ${customer.name}, your outstanding balance is PKR ${(customer.currentBalance || 0).toLocaleString()}. Please settle your dues at your earliest convenience. Thank you!`);
+    setIsTranslating(true);
     setIsMessageModalOpen(true);
+    
+    try {
+      // Translate customer name to Urdu
+      const urduName = await GeminiService.translateToUrdu(customer.name);
+      const defaultMessage = `محترم ${urduName}، آپ کا بقایا PKR ${(customer.currentBalance || 0).toLocaleString()} ہے۔ براہ کرم جلد از جلد ادائیگی کریں۔ شکریہ!`;
+      setMessageText(defaultMessage);
+    } catch (error) {
+      console.error('Translation error:', error);
+      // Fallback to English
+      setMessageText(`Dear ${customer.name}, your outstanding balance is PKR ${(customer.currentBalance || 0).toLocaleString()}. Please settle your dues at your earliest convenience. Thank you!`);
+      toast({
+        title: "Translation Failed",
+        description: "Using English message instead",
+        variant: "destructive"
+      });
+    } finally {
+      setIsTranslating(false);
+    }
   };
 
   const handleSendWhatsApp = () => {
@@ -186,6 +209,88 @@ const Credits = () => {
     window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
     setIsMessageModalOpen(false);
     setSelectedCustomer(null);
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        await processAudio(audioBlob);
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+      toast({
+        title: "Microphone Error",
+        description: "Could not access microphone. Please check permissions.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const processAudio = async (audioBlob: Blob) => {
+    setIsTranslating(true);
+    try {
+      // Use Web Speech API for transcription
+      const recognition = new (window as any).webkitSpeechRecognition();
+      recognition.lang = 'ur-PK'; // Urdu language
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onresult = async (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        
+        // Convert spoken text to proper written Urdu using Gemini
+        const properUrdu = await GeminiService.convertToProperUrdu(transcript);
+        setMessageText(properUrdu);
+        
+        toast({
+          title: "Voice Converted",
+          description: "Your voice has been converted to Urdu text",
+        });
+      };
+
+      recognition.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        toast({
+          title: "Recognition Error",
+          description: "Could not recognize speech. Please try again.",
+          variant: "destructive"
+        });
+      };
+
+      recognition.start();
+    } catch (error) {
+      console.error('Audio processing error:', error);
+      toast({
+        title: "Processing Error",
+        description: "Could not process audio",
+        variant: "destructive"
+      });
+    } finally {
+      setIsTranslating(false);
+    }
   };
 
   // Filter logic
@@ -437,40 +542,89 @@ const Credits = () => {
 
       {/* Message Modal */}
       <Dialog open={isMessageModalOpen} onOpenChange={setIsMessageModalOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Send WhatsApp Message</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageCircle className="h-5 w-5 text-green-600" />
+              Send WhatsApp Message
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             {selectedCustomer && (
-              <div>
-                <p className="text-sm text-muted-foreground mb-2">
-                  Sending to: <span className="font-semibold text-foreground">{selectedCustomer.name}</span>
-                </p>
+              <div className="bg-muted/50 p-3 rounded-lg space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Sending to:</span>
+                  <span className="font-semibold text-foreground">{selectedCustomer.name}</span>
+                </div>
                 {selectedCustomer.phone && (
-                  <p className="text-sm text-muted-foreground">
-                    Phone: <span className="font-semibold text-foreground">{selectedCustomer.phone}</span>
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Phone:</span>
+                    <span className="font-semibold text-foreground">{selectedCustomer.phone}</span>
+                  </div>
                 )}
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Balance:</span>
+                  <span className="font-bold text-red-600">PKR {Math.abs(selectedCustomer.currentBalance || 0).toLocaleString()}</span>
+                </div>
               </div>
             )}
             <div>
-              <Label htmlFor="message">Message</Label>
+              <div className="flex items-center justify-between mb-2">
+                <Label htmlFor="message">Message</Label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={isRecording ? "destructive" : "outline"}
+                  onClick={isRecording ? stopRecording : startRecording}
+                  disabled={isTranslating}
+                  className="h-7"
+                >
+                  {isRecording ? (
+                    <>
+                      <div className="h-2 w-2 rounded-full bg-white animate-pulse mr-2" />
+                      Stop Recording
+                    </>
+                  ) : isTranslating ? (
+                    <>
+                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Mic className="h-3 w-3 mr-1" />
+                      Voice Input
+                    </>
+                  )}
+                </Button>
+              </div>
               <Textarea
                 id="message"
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
-                rows={6}
-                className="mt-1"
+                rows={5}
+                className="resize-none font-urdu"
+                placeholder="آپ کا پیغام یہاں لکھیں..."
+                disabled={isTranslating}
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                {isTranslating ? "Translating customer name..." : "Click Voice Input to speak your message in Urdu"}
+              </p>
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsMessageModalOpen(false)}>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setIsMessageModalOpen(false);
+                  setMessageText("");
+                }}
+                disabled={isTranslating}
+              >
                 Cancel
               </Button>
               <Button 
                 className="bg-green-600 hover:bg-green-700"
                 onClick={handleSendWhatsApp}
+                disabled={isTranslating || !messageText.trim()}
               >
                 <MessageCircle className="h-4 w-4 mr-2" />
                 Send via WhatsApp
